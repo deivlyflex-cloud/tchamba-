@@ -1,0 +1,6 @@
+{
+  "name": "Tchemba Fast-Food",
+  "description": "Tchemba Fast-Food no Huambo: Cheese Drums crocantes com queijo derretido, combos generosos, bebidas frescas e encomendas diretas para WhatsApp.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
