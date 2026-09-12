@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { dbService } from '../lib/dbService';
 import { OrderRecord, OrderStatus } from '../types';
 import { FORMAT_KZ } from '../data/products';
-import { Search, Filter, Phone, MapPin, Calendar, Clock, Check, X, AlertTriangle, MessageCircle, RefreshCw } from 'lucide-react';
+import { Search, Filter, Phone, MapPin, Calendar, Clock, Check, X, AlertTriangle, MessageCircle, RefreshCw, Plus } from 'lucide-react';
+import { CreateManualOrderModal } from './CreateManualOrderModal';
 
 interface OrdersViewProps {
   selectedOrder?: OrderRecord | null;
@@ -17,6 +18,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ selectedOrder: initialSe
   const [activeOrder, setActiveOrder] = useState<OrderRecord | null>(initialSelected || null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [createManualModalOpen, setCreateManualModalOpen] = useState(false);
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -112,13 +114,23 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ selectedOrder: initialSe
           </span>
         </div>
 
-        <button
-          onClick={fetchOrders}
-          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#201f1f] hover:bg-[#2a2a2a] text-xs font-bold text-[#ab8985] hover:text-white border border-[#2a2a2a] transition-colors self-start sm:self-auto cursor-pointer"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          <span>Atualizar</span>
-        </button>
+        <div className="flex items-center gap-2.5 self-start sm:self-auto">
+          <button
+            onClick={() => setCreateManualModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#d32f2f] hover:bg-[#b71c1c] text-xs font-bold text-white shadow-lg shadow-[#d32f2f]/20 transition-all cursor-pointer uppercase tracking-wider"
+          >
+            <Plus className="w-4 h-4 stroke-[2.5]" />
+            <span>Novo Pedido Manual</span>
+          </button>
+
+          <button
+            onClick={fetchOrders}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#201f1f] hover:bg-[#2a2a2a] text-xs font-bold text-[#ab8985] hover:text-white border border-[#2a2a2a] transition-colors cursor-pointer"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>Atualizar</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter Chips & Search Bar */}
@@ -402,6 +414,15 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ selectedOrder: initialSe
           </div>
         </div>
       )}
+
+      {/* Modal de Criação Manual de Pedidos */}
+      <CreateManualOrderModal
+        isOpen={createManualModalOpen}
+        onClose={() => setCreateManualModalOpen(false)}
+        onOrderCreated={() => {
+          fetchOrders();
+        }}
+      />
     </div>
   );
 };
