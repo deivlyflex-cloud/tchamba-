@@ -3,7 +3,6 @@ import { Product, Category } from '../types';
 import { FORMAT_KZ } from '../data/products';
 import {
   BookOpen,
-  Sliders,
   Plus,
   Check,
   Search,
@@ -17,7 +16,6 @@ interface MenuSectionProps {
   selectedCategory: Category;
   onSelectCategory: (category: Category) => void;
   onAddToCart: (product: Product) => void;
-  onOpenAdminModal: () => void;
   onConsultFrango: () => void;
   addedProductId?: string | null;
 }
@@ -27,7 +25,6 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
   selectedCategory,
   onSelectCategory,
   onAddToCart,
-  onOpenAdminModal,
   onConsultFrango,
   addedProductId,
 }) => {
@@ -86,15 +83,6 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
                 className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm bg-[#1c1b1b] border border-[#2a2a2a] rounded-full text-white placeholder-[#ab8985] focus:outline-none focus:border-[#ffb95f]"
               />
             </div>
-
-            {/* Quick Price Adjuster Trigger */}
-            <button
-              onClick={onOpenAdminModal}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#201f1f] hover:bg-[#2a2a2a] border border-[#353534] text-[#e4beba] hover:text-white text-xs font-semibold transition-all cursor-pointer"
-            >
-              <Sliders className="w-4 h-4 text-[#ffb95f]" />
-              <span>Ajustar Preços / Frango</span>
-            </button>
           </div>
         </div>
 

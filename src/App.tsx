@@ -276,10 +276,6 @@ export default function App() {
             selectedCategory={selectedCategory}
             onSelectCategory={setSelectedCategory}
             onAddToCart={handleAddToCart}
-            onOpenAdminModal={() => {
-              window.location.hash = '/adm';
-              setIsAdminRoute(true);
-            }}
             onConsultFrango={handleConsultFrango}
             addedProductId={addedProductId}
           />

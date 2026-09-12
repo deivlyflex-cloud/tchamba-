@@ -81,19 +81,8 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
         </div>
 
         {/* Bottom bar centralizado */}
-        <div className="pt-8 mt-8 border-t border-[#1c1b1b] flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left text-[11px] text-[#ab8985]">
+        <div className="pt-8 mt-8 border-t border-[#1c1b1b] flex items-center justify-center text-center text-[11px] text-[#ab8985]">
           <p>© {currentYear} Tchemba Fast-Food. Todos os direitos reservados. Huambo, Angola.</p>
-          <a
-            href="/adm"
-            onClick={(e) => {
-              e.preventDefault();
-              window.location.hash = '/adm';
-              window.dispatchEvent(new HashChangeEvent('hashchange'));
-            }}
-            className="text-[10px] text-[#ab8985]/50 hover:text-[#ab8985] transition-colors"
-          >
-            Acesso Restrito
-          </a>
         </div>
       </div>
     </footer>
