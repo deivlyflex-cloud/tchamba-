@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Product, CartItem, Category } from './types';
 import { INITIAL_PRODUCTS } from './data/products';
+import { dbService } from './lib/dbService';
+import { AuthProvider } from './lib/AuthContext';
+import { AdminRouter } from './admin/AdminRouter';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { FeaturedProducts } from './components/FeaturedProducts';
@@ -10,7 +13,6 @@ import { HowToOrder } from './components/HowToOrder';
 import { LocationHours } from './components/LocationHours';
 import { CartDrawer } from './components/CartDrawer';
 import { CheckoutModal } from './components/CheckoutModal';
-import { AdminPriceModal } from './components/AdminPriceModal';
 import { FloatingCart } from './components/FloatingCart';
 import { FloatingWhatsApp } from './components/FloatingWhatsApp';
 import { Footer } from './components/Footer';
@@ -36,29 +38,49 @@ const safeStorage = {
       console.warn('Storage write restricted', e);
     }
   },
-  removeItem: (key: string): void => {
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        window.localStorage.removeItem(key);
-      }
-    } catch (e) {
-      console.warn('Storage remove restricted', e);
-    }
-  },
 };
 
 export default function App() {
-  const [products, setProducts] = useState<Product[]>(() => {
-    const saved = safeStorage.getItem('tchemba_custom_products');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error('Error loading saved products', e);
-      }
-    }
-    return INITIAL_PRODUCTS;
+  // Check if current route is administrative (/adm or #/adm)
+  const [isAdminRoute, setIsAdminRoute] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    const path = window.location.pathname;
+    const hash = window.location.hash;
+    return path.startsWith('/adm') || hash.startsWith('#/adm');
   });
+
+  useEffect(() => {
+    const handleLocationChange = () => {
+      const path = window.location.pathname;
+      const hash = window.location.hash;
+      setIsAdminRoute(path.startsWith('/adm') || hash.startsWith('#/adm'));
+    };
+
+    window.addEventListener('popstate', handleLocationChange);
+    window.addEventListener('hashchange', handleLocationChange);
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+      window.removeEventListener('hashchange', handleLocationChange);
+    };
+  }, []);
+
+  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
+
+  // Load live products from Supabase on mount
+  useEffect(() => {
+    let isMounted = true;
+    dbService.getProducts(true).then((dbProducts) => {
+      if (isMounted && dbProducts && dbProducts.length > 0) {
+        setProducts(dbProducts);
+      }
+    }).catch((err) => {
+      console.warn('Error loading products from Supabase, using initial products:', err);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const [cart, setCart] = useState<CartItem[]>(() => {
     const saved = safeStorage.getItem('tchemba_cart');
@@ -75,7 +97,6 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState<Category>('Todos');
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [addedProductId, setAddedProductId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<string>('inicio');
@@ -84,32 +105,6 @@ export default function App() {
   useEffect(() => {
     safeStorage.setItem('tchemba_cart', JSON.stringify(cart));
   }, [cart]);
-
-  // Save products when modified
-  const handleUpdateProduct = (
-    productId: string,
-    newPrice: number,
-    isConsultation: boolean
-  ) => {
-    setProducts((prev) => {
-      const updated = prev.map((p) =>
-        p.id === productId
-          ? {
-              ...p,
-              price: newPrice,
-              isConsultation,
-            }
-          : p
-      );
-      safeStorage.setItem('tchemba_custom_products', JSON.stringify(updated));
-      return updated;
-    });
-  };
-
-  const handleResetDefaults = () => {
-    safeStorage.removeItem('tchemba_custom_products');
-    setProducts(INITIAL_PRODUCTS);
-  };
 
   const showToast = (message: string) => {
     setToastMessage(message);
@@ -161,7 +156,7 @@ export default function App() {
     setCart([]);
     setIsCheckoutOpen(false);
     setIsCartOpen(false);
-    showToast('Pedido enviado com sucesso para o WhatsApp!');
+    showToast('Pedido registado e enviado para o WhatsApp!');
   };
 
   const handleConsultFrango = () => {
@@ -173,9 +168,11 @@ export default function App() {
 
   const handleAddEventPackage = (packageId?: string) => {
     const targetId = packageId || 'producao-eventos-20';
-    const eventProduct = products.find((p) => p.id === targetId);
+    const eventProduct = products.find((p) => p.id === targetId || p.name.includes('20 Cheese Drums'));
     if (eventProduct) {
       handleAddToCart(eventProduct);
+    } else if (products[0]) {
+      handleAddToCart(products[0]);
     }
   };
 
@@ -220,104 +217,116 @@ export default function App() {
 
   const totalCartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
+  // If on /adm route, display the full authenticated admin suite
+  if (isAdminRoute) {
+    return (
+      <AuthProvider>
+        <AdminRouter
+          onBackToStore={() => {
+            window.location.hash = '';
+            window.history.pushState({}, '', '/');
+            setIsAdminRoute(false);
+          }}
+        />
+      </AuthProvider>
+    );
+  }
+
+  // Otherwise render the public storefront
   return (
-    <div className="min-h-screen bg-[#131313] text-[#e5e2e1] flex flex-col font-sans selection:bg-[#d32f2f] selection:text-white">
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed top-24 right-4 z-50 flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-[#201f1f] border border-[#ffb95f]/50 text-white shadow-2xl animate-fade-in">
-          <CheckCircle2 className="w-5 h-5 text-[#ffb95f]" />
-          <span className="text-xs sm:text-sm font-semibold">{toastMessage}</span>
-        </div>
-      )}
+    <AuthProvider>
+      <div className="min-h-screen bg-[#131313] text-[#e5e2e1] flex flex-col font-sans selection:bg-[#d32f2f] selection:text-white">
+        {/* Toast Notification */}
+        {toastMessage && (
+          <div className="fixed top-24 right-4 z-50 flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-[#201f1f] border border-[#ffb95f]/50 text-white shadow-2xl animate-fade-in">
+            <CheckCircle2 className="w-5 h-5 text-[#ffb95f]" />
+            <span className="text-xs sm:text-sm font-semibold">{toastMessage}</span>
+          </div>
+        )}
 
-      {/* Main Header Navigation */}
-      <Header
-        cartCount={totalCartCount}
-        onOpenCart={() => setIsCartOpen(true)}
-        onNavigate={scrollToSection}
-        activeSection={activeSection}
-      />
+        {/* Main Header Navigation */}
+        <Header
+          cartCount={totalCartCount}
+          onOpenCart={() => setIsCartOpen(true)}
+          onNavigate={scrollToSection}
+          activeSection={activeSection}
+        />
 
-      <main className="flex-1 flex flex-col">
-        {/* 1. Hero Section */}
-        <Hero
-          onExploreMenu={() => scrollToSection('cardapio')}
-          onFilterCombos={() => {
-            setSelectedCategory('Combos');
-            scrollToSection('cardapio');
+        <main className="flex-1 flex flex-col">
+          {/* 1. Hero Section */}
+          <Hero
+            onExploreMenu={() => scrollToSection('cardapio')}
+            onFilterCombos={() => {
+              setSelectedCategory('Combos');
+              scrollToSection('cardapio');
+            }}
+          />
+
+          {/* 2. Featured: Os Mais Pedidos */}
+          <FeaturedProducts
+            products={products}
+            onAddToCart={handleAddToCart}
+            onViewAllMenu={() => scrollToSection('cardapio')}
+            addedProductId={addedProductId}
+          />
+
+          {/* 3. Interactive Menu Section */}
+          <MenuSection
+            products={products}
+            selectedCategory={selectedCategory}
+            onSelectCategory={setSelectedCategory}
+            onAddToCart={handleAddToCart}
+            onOpenAdminModal={() => {
+              window.location.hash = '/adm';
+              setIsAdminRoute(true);
+            }}
+            onConsultFrango={handleConsultFrango}
+            addedProductId={addedProductId}
+          />
+
+          {/* 4. Events & Catering Banner */}
+          <EventsBanner
+            onAddEventPackage={handleAddEventPackage}
+            addedProductId={addedProductId}
+          />
+
+          {/* 5. How to Order: 5-step guide */}
+          <HowToOrder />
+
+          {/* 6. Location, Business Hours & Contacts */}
+          <LocationHours />
+        </main>
+
+        {/* Footer with subtle link to /adm */}
+        <Footer onNavigate={scrollToSection} />
+
+        {/* Sliding Cart Drawer */}
+        <CartDrawer
+          isOpen={isCartOpen}
+          onClose={() => setIsCartOpen(false)}
+          items={cart}
+          onUpdateQuantity={handleUpdateQuantity}
+          onRemoveItem={handleRemoveItem}
+          onOpenCheckout={() => {
+            setIsCartOpen(false);
+            setIsCheckoutOpen(true);
           }}
         />
 
-        {/* 2. Featured: Os Mais Pedidos */}
-        <FeaturedProducts
-          products={products}
-          onAddToCart={handleAddToCart}
-          onViewAllMenu={() => scrollToSection('cardapio')}
-          addedProductId={addedProductId}
+        {/* Checkout Direct to WhatsApp Modal */}
+        <CheckoutModal
+          isOpen={isCheckoutOpen}
+          onClose={() => setIsCheckoutOpen(false)}
+          items={cart}
+          onOrderCompleted={handleOrderCompleted}
         />
 
-        {/* 3. Interactive Menu Section */}
-        <MenuSection
-          products={products}
-          selectedCategory={selectedCategory}
-          onSelectCategory={setSelectedCategory}
-          onAddToCart={handleAddToCart}
-          onOpenAdminModal={() => setIsAdminModalOpen(true)}
-          onConsultFrango={handleConsultFrango}
-          addedProductId={addedProductId}
-        />
+        {/* Mobile Floating Cart Summary */}
+        <FloatingCart items={cart} onOpenCart={() => setIsCartOpen(true)} />
 
-        {/* 4. Events & Catering Banner */}
-        <EventsBanner
-          onAddEventPackage={handleAddEventPackage}
-          addedProductId={addedProductId}
-        />
-
-        {/* 5. How to Order: 5-step guide */}
-        <HowToOrder />
-
-        {/* 6. Location, Business Hours & Contacts */}
-        <LocationHours />
-      </main>
-
-      {/* Footer */}
-      <Footer onNavigate={scrollToSection} />
-
-      {/* Sliding Cart Drawer */}
-      <CartDrawer
-        isOpen={isCartOpen}
-        onClose={() => setIsCartOpen(false)}
-        items={cart}
-        onUpdateQuantity={handleUpdateQuantity}
-        onRemoveItem={handleRemoveItem}
-        onOpenCheckout={() => {
-          setIsCartOpen(false);
-          setIsCheckoutOpen(true);
-        }}
-      />
-
-      {/* Checkout Direct to WhatsApp Modal */}
-      <CheckoutModal
-        isOpen={isCheckoutOpen}
-        onClose={() => setIsCheckoutOpen(false)}
-        items={cart}
-        onOrderCompleted={handleOrderCompleted}
-      />
-
-      {/* Admin Price Adjustment Modal */}
-      <AdminPriceModal
-        isOpen={isAdminModalOpen}
-        onClose={() => setIsAdminModalOpen(false)}
-        products={products}
-        onUpdateProduct={handleUpdateProduct}
-        onResetDefaults={handleResetDefaults}
-      />
-
-      {/* Mobile Floating Cart Summary */}
-      <FloatingCart items={cart} onOpenCart={() => setIsCartOpen(true)} />
-
-      {/* Floating WhatsApp quick assistance button */}
-      <FloatingWhatsApp />
-    </div>
+        {/* Floating WhatsApp quick assistance button */}
+        <FloatingWhatsApp />
+      </div>
+    </AuthProvider>
   );
 }

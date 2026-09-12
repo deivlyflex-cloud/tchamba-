@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { CartItem, CustomerOrderInfo } from '../types';
 import { FORMAT_KZ } from '../data/products';
-import { X, Send, MapPin, User, Phone, FileText, CheckCircle2, MessageSquare } from 'lucide-react';
+import { dbService } from '../lib/dbService';
+import { X, Send, User, Phone, MapPin, FileText, MessageSquare } from 'lucide-react';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -25,6 +26,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   });
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [submitting, setSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
@@ -33,7 +35,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     0
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: { [key: string]: string } = {};
 
@@ -52,34 +54,62 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       return;
     }
 
-    // Build the structured WhatsApp message
+    setSubmitting(true);
+
+    // 1. Save order in Supabase BEFORE opening WhatsApp
+    const orderItemsPayload = items.map((item) => ({
+      productId: item.product.id,
+      productName: item.product.name,
+      unitPrice: item.product.price,
+      quantity: item.quantity,
+    }));
+
+    const result = await dbService.createOrder({
+      customerName: formData.name.trim(),
+      customerPhone: formData.phone.trim(),
+      neighborhood: formData.zone.trim(),
+      deliveryAddress: formData.address.trim() || 'A combinar',
+      notes: formData.notes?.trim() || '',
+      items: orderItemsPayload,
+    });
+
+    const orderNumber = result.orderNumber;
+
+    // 2. Build the exact specified WhatsApp message without emojis
     const itemsList = items
       .map(
         (item) =>
-          `• ${item.quantity}x *${item.product.name}* - ${FORMAT_KZ(
+          `${item.quantity}x ${item.product.name} - ${FORMAT_KZ(
             item.product.price * item.quantity
           )}`
       )
       .join('\n');
 
-    const message = `🍗 *NOVO PEDIDO - TCHEMBA FAST-FOOD* 🍗
------------------------------------
-👤 *Cliente:* ${formData.name.trim()}
-📱 *Telefone/WhatsApp:* ${formData.phone.trim()}
-📍 *Bairro/Zona:* ${formData.zone.trim()}
-🏠 *Endereço / Referência:* ${formData.address.trim() || 'A combinar'}
-${formData.notes?.trim() ? `📝 *Observações:* ${formData.notes.trim()}\n` : ''}-----------------------------------
-📦 *ITENS:*
+    const message = `Olá, Tchemba.
+
+Gostaria de fazer o seguinte pedido:
+
+PEDIDO ${orderNumber}
+
 ${itemsList}
------------------------------------
-💰 *TOTAL DOS ITENS:* ${FORMAT_KZ(total)}
-*(Taxa de entrega calculada e confirmada via chat)*
------------------------------------
-Aguardando confirmação da equipa Tchemba!`;
+
+TOTAL: ${FORMAT_KZ(total)}
+
+DADOS DO CLIENTE
+
+Nome: ${formData.name.trim()}
+Telefone: ${formData.phone.trim()}
+Localização: ${formData.zone.trim()} - ${formData.address.trim() || 'Huambo'}
+Observações: ${formData.notes?.trim() || 'Nenhuma'}
+
+Aguardo a confirmação do pedido.`;
 
     const encodedMessage = encodeURIComponent(message);
     const whatsappUrl = `https://wa.me/244939779057?text=${encodedMessage}`;
 
+    setSubmitting(false);
+
+    // Open WhatsApp
     window.open(whatsappUrl, '_blank');
     onOrderCompleted();
   };
@@ -94,7 +124,7 @@ Aguardando confirmação da equipa Tchemba!`;
               Finalizar Pedido
             </h3>
             <span className="text-xs text-[#ab8985]">
-              Sem cadastro, envio direto e instantâneo para o WhatsApp da Tchemba
+              Envio direto para a cozinha e confirmação instantânea no WhatsApp
             </span>
           </div>
 
@@ -173,7 +203,7 @@ Aguardando confirmação da equipa Tchemba!`;
             </label>
             <input
               type="text"
-              placeholder="ex: Centro da Cidade, São Pedro, Benfica, Santo António..."
+              placeholder="ex: Bairro Benfica, Cidade Alta, São João, Canata..."
               value={formData.zone}
               onChange={(e) => setFormData({ ...formData, zone: e.target.value })}
               className={`w-full px-4 py-2.5 rounded-xl bg-[#201f1f] border text-white text-sm focus:outline-none transition-colors ${
@@ -186,7 +216,7 @@ Aguardando confirmação da equipa Tchemba!`;
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold text-[#e4beba] flex items-center gap-1.5">
               <FileText className="w-3.5 h-3.5 text-[#ffb95f]" />
-              <span>Rua e Ponto de Referência</span>
+              <span>Endereço Detalhado / Ponto de Referência</span>
             </label>
             <input
               type="text"
@@ -215,13 +245,14 @@ Aguardando confirmação da equipa Tchemba!`;
           <div className="pt-2">
             <button
               type="submit"
-              className="w-full py-4 rounded-full bg-[#d32f2f] hover:bg-[#b71c1c] text-white font-extrabold text-sm tracking-wider shadow-lg shadow-[#d32f2f]/30 flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98"
+              disabled={submitting}
+              className="w-full py-4 rounded-full bg-[#d32f2f] hover:bg-[#b71c1c] text-white font-extrabold text-sm tracking-wider shadow-lg shadow-[#d32f2f]/30 flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98 disabled:opacity-50"
             >
               <Send className="w-5 h-5" />
-              <span>ENVIAR PEDIDO PELO WHATSAPP</span>
+              <span>{submitting ? 'A registar pedido...' : 'ENVIAR PEDIDO PELO WHATSAPP'}</span>
             </button>
             <p className="text-[11px] text-center text-[#ab8985] mt-2">
-              Ao clicar, o WhatsApp será aberto com o pedido já formatado.
+              O pedido é guardado com segurança no sistema antes da abertura do WhatsApp.
             </p>
           </div>
         </form>
