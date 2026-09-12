@@ -79,26 +79,32 @@ export const Hero: React.FC<HeroProps> = ({ onExploreMenu, onFilterCombos }) => 
           </div>
 
           {/* Trust Metrics */}
-          <div className="grid grid-cols-3 gap-3 sm:gap-4 pt-8 mt-4 max-w-xl">
-            <div className="flex flex-col bg-[#1c1b1b]/80 border border-[#2a2a2a] backdrop-blur-md p-3.5 rounded-xl shadow-sm">
-              <span className="font-heading text-xl sm:text-2xl font-extrabold text-[#ffb95f]">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 pt-6 mt-2 max-w-xl w-full">
+            <div className="flex sm:flex-col items-center sm:items-start justify-between sm:justify-center bg-[#1c1b1b]/90 border border-[#2a2a2a] backdrop-blur-md px-4 py-3 sm:p-4 rounded-xl shadow-sm">
+              <span className="font-heading text-xl sm:text-2xl font-extrabold text-[#ffb95f] shrink-0">
                 100%
               </span>
-              <span className="text-xs text-[#ab8985] font-medium whitespace-nowrap">Frango Selecionado</span>
+              <span className="text-xs text-[#ab8985] font-semibold text-right sm:text-left sm:mt-1">
+                Frango Selecionado
+              </span>
             </div>
 
-            <div className="flex flex-col bg-[#1c1b1b]/80 border border-[#2a2a2a] backdrop-blur-md p-3.5 rounded-xl shadow-sm">
-              <span className="font-heading text-xl sm:text-2xl font-extrabold text-[#ffb3ac]">
+            <div className="flex sm:flex-col items-center sm:items-start justify-between sm:justify-center bg-[#1c1b1b]/90 border border-[#2a2a2a] backdrop-blur-md px-4 py-3 sm:p-4 rounded-xl shadow-sm">
+              <span className="font-heading text-lg sm:text-2xl font-extrabold text-[#ffb3ac] shrink-0">
                 Estaladiço
               </span>
-              <span className="text-xs text-[#ab8985] font-medium whitespace-nowrap">Queijo Fundido</span>
+              <span className="text-xs text-[#ab8985] font-semibold text-right sm:text-left sm:mt-1">
+                Queijo Fundido
+              </span>
             </div>
 
-            <div className="flex flex-col bg-[#1c1b1b]/80 border border-[#2a2a2a] backdrop-blur-md p-3.5 rounded-xl shadow-sm">
-              <span className="font-heading text-xl sm:text-2xl font-extrabold text-white">
+            <div className="flex sm:flex-col items-center sm:items-start justify-between sm:justify-center bg-[#1c1b1b]/90 border border-[#2a2a2a] backdrop-blur-md px-4 py-3 sm:p-4 rounded-xl shadow-sm">
+              <span className="font-heading text-xl sm:text-2xl font-extrabold text-white shrink-0">
                 30 min
               </span>
-              <span className="text-xs text-[#ab8985] font-medium whitespace-nowrap">Entrega Huambo</span>
+              <span className="text-xs text-[#ab8985] font-semibold text-right sm:text-left sm:mt-1">
+                Entrega no Huambo
+              </span>
             </div>
           </div>
         </div>

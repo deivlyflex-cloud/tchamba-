@@ -105,13 +105,23 @@ export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
                     <button
                       onClick={() => onAddToCart(item)}
                       aria-label={`Adicionar ${item.name}`}
-                      className={`flex items-center justify-center w-11 h-11 rounded-full transition-all active:scale-95 shadow-md cursor-pointer ${
+                      className={`inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all active:scale-95 shadow-md cursor-pointer whitespace-nowrap ${
                         isJustAdded
                           ? 'bg-emerald-600 text-white'
                           : 'bg-[#d32f2f] hover:bg-[#b71c1c] text-white shadow-[0_0_15px_rgba(211,47,47,0.35)]'
                       }`}
                     >
-                      {isJustAdded ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                      {isJustAdded ? (
+                        <>
+                          <Check className="w-4 h-4" />
+                          <span>Adicionado</span>
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="w-4 h-4 stroke-[2.5]" />
+                          <span>Adicionar</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>

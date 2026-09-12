@@ -149,25 +149,31 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
                   {/* Photo with overlay */}
                   <div
                     className={`relative w-full overflow-hidden bg-[#0e0e0e] ${
-                      isEvent ? 'h-52 sm:h-60' : 'h-48 sm:h-52'
+                      isEvent ? 'h-56 sm:h-64' : 'h-48 sm:h-52'
                     }`}
                   >
                     <img
                       alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
                       src={product.image}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#201f1f] via-transparent to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#201f1f] via-transparent to-transparent pointer-events-none" />
 
                     {/* Badge top-left */}
                     {product.badge && (
-                      <span className="absolute top-3 left-3 px-2.5 py-1 rounded bg-[#2a2a2a]/95 text-[#ffb95f] text-[11px] font-bold uppercase tracking-wider border border-[#353534] shadow-sm">
+                      <span
+                        className={`absolute top-3 left-3 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider shadow-md whitespace-nowrap ${
+                          product.badge === 'Por Encomenda'
+                            ? 'bg-[#d32f2f] text-white border border-[#ffb3ac]/30'
+                            : 'bg-[#2a2a2a]/95 text-[#ffb95f] border border-[#353534]'
+                        }`}
+                      >
                         {product.badge}
                       </span>
                     )}
 
                     {product.pieces && (
-                      <span className="absolute top-3 right-3 px-2.5 py-0.5 rounded-full bg-[#ee9800]/25 text-[#ffb95f] text-xs font-bold border border-[#ee9800]/40 backdrop-blur-sm">
+                      <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-[#ee9800]/90 text-[#201000] text-xs font-black border border-[#ffb95f]/40 backdrop-blur-sm shadow-sm whitespace-nowrap">
                         {product.pieces}
                       </span>
                     )}
@@ -177,22 +183,22 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
                   <div className="p-4 sm:p-5 flex flex-col flex-1 justify-between gap-4">
                     <div>
                       <div className="flex items-center justify-between gap-2">
-                        <h3 className="font-heading text-lg font-bold text-white group-hover:text-[#ffb95f] transition-colors">
+                        <h3 className="font-heading text-base sm:text-lg font-bold text-white group-hover:text-[#ffb95f] transition-colors leading-snug">
                           {product.name}
                         </h3>
                       </div>
-                      <p className="text-xs text-[#ab8985] mt-1.5 leading-relaxed">
+                      <p className="text-xs text-[#ab8985] mt-1.5 leading-relaxed line-clamp-3">
                         {product.description}
                       </p>
                     </div>
 
                     {/* Footer price & CTA */}
-                    <div className="flex items-center justify-between pt-3 border-t border-[#2a2a2a]/70">
-                      <div>
-                        <span className="text-[10px] text-[#ab8985] uppercase tracking-wider block font-semibold">
+                    <div className="flex items-center justify-between pt-3 border-t border-[#2a2a2a]/70 gap-2">
+                      <div className="min-w-0 shrink">
+                        <span className="text-[10px] text-[#ab8985] uppercase tracking-wider block font-semibold truncate">
                           {product.isConsultation && product.price === 0 ? 'Valor' : 'Preço'}
                         </span>
-                        <span className="font-heading text-lg text-[#ffb95f] font-extrabold">
+                        <span className="font-heading text-base sm:text-lg text-[#ffb95f] font-extrabold whitespace-nowrap block">
                           {product.isConsultation && product.price === 0
                             ? 'Sob Consulta'
                             : FORMAT_KZ(product.price)}
@@ -202,16 +208,16 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
                       {product.isConsultation && product.price === 0 ? (
                         <button
                           onClick={onConsultFrango}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#2a2a2a] hover:bg-[#353534] text-white text-xs font-bold uppercase tracking-wider transition-transform active:scale-95 cursor-pointer border border-[#353534]"
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#2a2a2a] hover:bg-[#353534] text-white text-xs font-bold uppercase tracking-wider transition-transform active:scale-95 cursor-pointer border border-[#353534] whitespace-nowrap shrink-0"
                         >
                           <HelpCircle className="w-4 h-4 text-[#ffb95f]" />
                           <span>Consultar</span>
                         </button>
                       ) : (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 shrink-0">
                           <button
                             onClick={() => onAddToCart(product)}
-                            className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all active:scale-95 shadow-md cursor-pointer ${
+                            className={`inline-flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all active:scale-95 shadow-md cursor-pointer whitespace-nowrap ${
                               isJustAdded
                                 ? 'bg-emerald-600 text-white'
                                 : 'bg-[#d32f2f] hover:bg-[#b71c1c] text-white shadow-[0_0_15px_rgba(211,47,47,0.3)]'
@@ -219,12 +225,12 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
                           >
                             {isJustAdded ? (
                               <>
-                                <Check className="w-4 h-4" />
+                                <Check className="w-3.5 h-3.5" />
                                 <span>Adicionado</span>
                               </>
                             ) : (
                               <>
-                                <Plus className="w-4 h-4" />
+                                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                                 <span>Adicionar</span>
                               </>
                             )}
@@ -232,13 +238,14 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
 
                           {isEvent && (
                             <a
-                              href="https://wa.me/244939779057?text=Ol%C3%A1%2C%20Tchemba.%20Tenho%20interesse%20na%20produ%C3%A7%C3%A3o%20para%20eventos%20de%2020%20Cheese%20Drums."
+                              href={`https://wa.me/244939779057?text=Ol%C3%A1%2C%20Tchemba.%20Gostaria%20de%20encomendar%20o%20pacote%20${encodeURIComponent(product.name)}.`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 px-3.5 py-2 rounded-full bg-[#2a2a2a] hover:bg-[#353534] text-white text-xs font-bold border border-[#353534] transition-colors"
+                              className="inline-flex items-center gap-1 p-2 sm:px-3 sm:py-2 rounded-full bg-[#2a2a2a] hover:bg-[#353534] text-white text-xs font-bold border border-[#353534] transition-colors whitespace-nowrap shrink-0"
+                              title="Encomendar por WhatsApp"
                             >
-                              <MessageCircle className="w-4 h-4 text-[#ffb95f]" />
-                              <span>Agendar</span>
+                              <MessageCircle className="w-4 h-4 text-[#25D366]" />
+                              <span className="hidden sm:inline">WhatsApp</span>
                             </a>
                           )}
                         </div>

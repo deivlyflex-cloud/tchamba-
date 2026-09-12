@@ -1,4 +1,7 @@
 import { Product } from '../types';
+import cocaColaImg from '../assets/images/coca_cola_can_1789227306156.jpg';
+import fantaImg from '../assets/images/fanta_orange_can_1789227326450.jpg';
+import spriteImg from '../assets/images/sprite_bottle_can_1789227342904.jpg';
 
 export const INITIAL_PRODUCTS: Product[] = [
   {
@@ -79,7 +82,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     description: 'Garrafa de 500ml bem gelada para acompanhar a sua refeição com máxima refrescância.',
     price: 700,
     category: 'Bebidas',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBSo444DSQm8SK23kRsxJAGzd9M87Igi-4gCSRRlzt6jJPusFl8Oj3K2x-DfS_ygDvek4cSh6f5JP1JBJJk1bHYFGpS-OqeFVld8DUyYYQnwvP9SlHWRhBGrPHcNksCoB37XmLUhAyc2eKcwch2srJs168wuXPdQQuHK-0htv-Xx7hv48VcW5163K7S0y8gX8VG3IAba8tchXTbNupOfTOnT5p1U6t6S8gFm2OSsfAvdbCob9uLsklpAA',
+    image: cocaColaImg,
   },
   {
     id: 'fanta-500ml',
@@ -87,7 +90,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     description: 'Fanta Laranja 500ml bem fresca, sabor frutada e efervescente.',
     price: 700,
     category: 'Bebidas',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBSo444DSQm8SK23kRsxJAGzd9M87Igi-4gCSRRlzt6jJPusFl8Oj3K2x-DfS_ygDvek4cSh6f5JP1JBJJk1bHYFGpS-OqeFVld8DUyYYQnwvP9SlHWRhBGrPHcNksCoB37XmLUhAyc2eKcwch2srJs168wuXPdQQuHK-0htv-Xx7hv48VcW5163K7S0y8gX8VG3IAba8tchXTbNupOfTOnT5p1U6t6S8gFm2OSsfAvdbCob9uLsklpAA',
+    image: fantaImg,
   },
   {
     id: 'sprite-500ml',
@@ -95,18 +98,51 @@ export const INITIAL_PRODUCTS: Product[] = [
     description: 'Sprite limão 500ml bem gelada com aquele toque cítrico revigorante.',
     price: 700,
     category: 'Bebidas',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBSo444DSQm8SK23kRsxJAGzd9M87Igi-4gCSRRlzt6jJPusFl8Oj3K2x-DfS_ygDvek4cSh6f5JP1JBJJk1bHYFGpS-OqeFVld8DUyYYQnwvP9SlHWRhBGrPHcNksCoB37XmLUhAyc2eKcwch2srJs168wuXPdQQuHK-0htv-Xx7hv48VcW5163K7S0y8gX8VG3IAba8tchXTbNupOfTOnT5p1U6t6S8gFm2OSsfAvdbCob9uLsklpAA',
+    image: spriteImg,
   },
   {
     id: 'producao-eventos-20',
-    name: 'Produção para Eventos (20 Cheese Drums)',
-    description: 'Ideal para festas de aniversário, reuniões corporativas, convívios e comemorações familiares. Entregue quente na hora combinada.',
+    name: 'Venda para Eventos – 20 Cheese Drums',
+    description: 'Produção sob encomenda para aniversários, reuniões e convívios familiares. Entregue quente e estaladiço no Huambo.',
     price: 18100,
     category: 'Eventos',
     image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB_q0cqkESr5uOfLL0knJ2VGA6X_NjA2MeXdenbtUI4TVE247m7E51Rl4NihjXtrmTV3qMiydmAAmcRXikG9xidOVNY_VyMU0vRZToA6oJkXYUwInRabZyCHw3dCn3-AI50_tOF9RuZ6au-7yvspuco3mLhce8wySauAUTZrUTt9Sdzu1d3hTgXnyhu2EHoNyOCMfTl2SCnbwqnVnpSHE1VTWenOUbfGhJ4-XfPzoIayFg20RPp_KA71Q',
-    badge: 'Festa & Encontros',
+    badge: 'Por Encomenda',
     badgeType: 'evento',
     pieces: '20 Peças',
+  },
+  {
+    id: 'producao-eventos-30',
+    name: 'Venda para Eventos – 30 Cheese Drums',
+    description: 'Bandeja generosa de 30 unidades artesanais com queijo derretido por dentro e crocância única.',
+    price: 27500,
+    category: 'Eventos',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB_q0cqkESr5uOfLL0knJ2VGA6X_NjA2MeXdenbtUI4TVE247m7E51Rl4NihjXtrmTV3qMiydmAAmcRXikG9xidOVNY_VyMU0vRZToA6oJkXYUwInRabZyCHw3dCn3-AI50_tOF9RuZ6au-7yvspuco3mLhce8wySauAUTZrUTt9Sdzu1d3hTgXnyhu2EHoNyOCMfTl2SCnbwqnVnpSHE1VTWenOUbfGhJ4-XfPzoIayFg20RPp_KA71Q',
+    badge: 'Por Encomenda',
+    badgeType: 'evento',
+    pieces: '30 Peças',
+  },
+  {
+    id: 'producao-eventos-40',
+    name: 'Venda para Eventos – 40 Cheese Drums',
+    description: 'Perfeito para grandes confraternizações, aniversários e celebrações de amigos no Huambo.',
+    price: 36600,
+    category: 'Eventos',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB_q0cqkESr5uOfLL0knJ2VGA6X_NjA2MeXdenbtUI4TVE247m7E51Rl4NihjXtrmTV3qMiydmAAmcRXikG9xidOVNY_VyMU0vRZToA6oJkXYUwInRabZyCHw3dCn3-AI50_tOF9RuZ6au-7yvspuco3mLhce8wySauAUTZrUTt9Sdzu1d3hTgXnyhu2EHoNyOCMfTl2SCnbwqnVnpSHE1VTWenOUbfGhJ4-XfPzoIayFg20RPp_KA71Q',
+    badge: 'Por Encomenda',
+    badgeType: 'evento',
+    pieces: '40 Peças',
+  },
+  {
+    id: 'producao-eventos-50',
+    name: 'Venda para Eventos – 50 Cheese Drums',
+    description: 'Produção em grande escala para celebrações com a máxima qualidade e entrega pontual.',
+    price: 46000,
+    category: 'Eventos',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB_q0cqkESr5uOfLL0knJ2VGA6X_NjA2MeXdenbtUI4TVE247m7E51Rl4NihjXtrmTV3qMiydmAAmcRXikG9xidOVNY_VyMU0vRZToA6oJkXYUwInRabZyCHw3dCn3-AI50_tOF9RuZ6au-7yvspuco3mLhce8wySauAUTZrUTt9Sdzu1d3hTgXnyhu2EHoNyOCMfTl2SCnbwqnVnpSHE1VTWenOUbfGhJ4-XfPzoIayFg20RPp_KA71Q',
+    badge: 'Por Encomenda',
+    badgeType: 'evento',
+    pieces: '50 Peças',
   },
 ];
 

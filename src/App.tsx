@@ -171,8 +171,9 @@ export default function App() {
     window.open(`https://wa.me/244939779057?text=${text}`, '_blank');
   };
 
-  const handleAddEventPackage = () => {
-    const eventProduct = products.find((p) => p.id === 'producao-eventos-20');
+  const handleAddEventPackage = (packageId?: string) => {
+    const targetId = packageId || 'producao-eventos-20';
+    const eventProduct = products.find((p) => p.id === targetId);
     if (eventProduct) {
       handleAddToCart(eventProduct);
     }
@@ -269,7 +270,7 @@ export default function App() {
         {/* 4. Events & Catering Banner */}
         <EventsBanner
           onAddEventPackage={handleAddEventPackage}
-          isAdded={addedProductId === 'producao-eventos-20'}
+          addedProductId={addedProductId}
         />
 
         {/* 5. How to Order: 5-step guide */}
