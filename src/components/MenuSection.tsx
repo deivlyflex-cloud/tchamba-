@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Product, Category } from '../types';
-import { FORMAT_KZ } from '../data/products';
+import { FORMAT_KZ, DEFAULT_PRODUCT_IMAGE } from '../data/products';
 import {
   BookOpen,
   Plus,
@@ -143,7 +143,7 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
                     <img
                       alt={product.name}
                       className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
-                      src={product.image}
+                      src={product.image?.trim() || DEFAULT_PRODUCT_IMAGE}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#201f1f] via-transparent to-transparent pointer-events-none" />
 

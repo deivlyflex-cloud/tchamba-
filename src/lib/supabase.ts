@@ -1,5 +1,9 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
+// Production Supabase project credentials for Tchemba
+const DEFAULT_SUPABASE_URL = 'https://elwfajxbudpksjylyivk.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_bYJ5QbqNO_ddzM2JLb8qLA_AKiKLNAo';
+
 // Safe extraction of Supabase URL and Anon Key from environment or runtime config
 const getSupabaseEnv = () => {
   const envUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -9,13 +13,20 @@ const getSupabaseEnv = () => {
   const storedUrl = typeof window !== 'undefined' ? localStorage.getItem('tchemba_supabase_url') : null;
   const storedKey = typeof window !== 'undefined' ? localStorage.getItem('tchemba_supabase_anon_key') : null;
 
-  const url = storedUrl || envUrl || '';
-  const key = storedKey || envKey || '';
+  const url = (storedUrl || envUrl || DEFAULT_SUPABASE_URL).trim();
+  const key = (storedKey || envKey || DEFAULT_SUPABASE_ANON_KEY).trim();
+
+  const isConfigured = Boolean(
+    url &&
+    key &&
+    !url.includes('your-project') &&
+    !key.includes('your-anon-key')
+  );
 
   return {
-    url: url.trim(),
-    key: key.trim(),
-    isConfigured: Boolean(url && key && !url.includes('your-project') && !key.includes('your-anon-key')),
+    url,
+    key,
+    isConfigured,
   };
 };
 

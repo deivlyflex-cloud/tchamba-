@@ -1,6 +1,6 @@
 import React from 'react';
 import { Product } from '../types';
-import { FORMAT_KZ } from '../data/products';
+import { FORMAT_KZ, DEFAULT_PRODUCT_IMAGE } from '../data/products';
 import { Plus, ArrowRight, Check } from 'lucide-react';
 
 interface FeaturedProductsProps {
@@ -61,7 +61,7 @@ export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
                   <img
                     alt={item.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    src={item.image}
+                    src={item.image?.trim() || DEFAULT_PRODUCT_IMAGE}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#201f1f] via-transparent to-transparent" />
 

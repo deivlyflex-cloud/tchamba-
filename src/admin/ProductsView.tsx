@@ -13,6 +13,8 @@ export const ProductsView: React.FC = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
+  const [modalError, setModalError] = useState<string | null>(null);
+  const [feedbackMessage, setFeedbackMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Form State
   const [formName, setFormName] = useState('');
@@ -51,6 +53,7 @@ export const ProductsView: React.FC = () => {
     setFormImageUrl('');
     setImageFile(null);
     setImagePreview('');
+    setModalError(null);
     setIsModalOpen(true);
   };
 
@@ -68,6 +71,7 @@ export const ProductsView: React.FC = () => {
     setFormImageUrl(p.image);
     setImageFile(null);
     setImagePreview(p.image);
+    setModalError(null);
     setIsModalOpen(true);
   };
 
@@ -76,21 +80,27 @@ export const ProductsView: React.FC = () => {
       const file = e.target.files[0];
       setImageFile(file);
       setImagePreview(URL.createObjectURL(file));
+      setModalError(null);
     }
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setActionLoading(true);
+    setModalError(null);
 
     let finalImageUrl = formImageUrl;
 
     // Upload image to Supabase Storage if a new file was chosen
     if (imageFile) {
+      console.log('[ProductsView] Uploading image file to Supabase...');
       const { url, error: uploadErr } = await dbService.uploadProductImage(imageFile);
-      if (!uploadErr && url) {
-        finalImageUrl = url;
+      if (uploadErr || !url) {
+        setModalError(uploadErr || 'Falha ao enviar imagem. Verifique a conexão com o Supabase.');
+        setActionLoading(false);
+        return;
       }
+      finalImageUrl = url;
     }
 
     const payload: Partial<Product> = {
@@ -106,11 +116,26 @@ export const ProductsView: React.FC = () => {
       isConsultation: formIsConsultation,
     };
 
+    console.log('[ProductsView] Saving product to Supabase:', payload);
+    let saveResult: { error: string | null };
+
     if (editingProduct) {
-      await dbService.updateProduct(editingProduct.id, payload);
+      saveResult = await dbService.updateProduct(editingProduct.id, payload);
     } else {
-      await dbService.createProduct(payload);
+      saveResult = await dbService.createProduct(payload);
     }
+
+    if (saveResult.error) {
+      setModalError(saveResult.error);
+      setActionLoading(false);
+      return;
+    }
+
+    setFeedbackMessage({
+      type: 'success',
+      text: editingProduct ? 'Produto atualizado com sucesso no Supabase!' : 'Produto criado com sucesso no Supabase!',
+    });
+    setTimeout(() => setFeedbackMessage(null), 5000);
 
     setActionLoading(false);
     setIsModalOpen(false);
@@ -119,7 +144,12 @@ export const ProductsView: React.FC = () => {
 
   const handleToggleActive = async (p: Product) => {
     const newActiveState = !p.isActive;
-    await dbService.updateProduct(p.id, { isActive: newActiveState });
+    const { error } = await dbService.updateProduct(p.id, { isActive: newActiveState });
+    if (error) {
+      setFeedbackMessage({ type: 'error', text: `Erro ao alterar estado: ${error}` });
+      setTimeout(() => setFeedbackMessage(null), 5000);
+      return;
+    }
     setProducts((prev) =>
       prev.map((item) => (item.id === p.id ? { ...item, isActive: newActiveState } : item))
     );
@@ -127,15 +157,27 @@ export const ProductsView: React.FC = () => {
 
   const handleToggleFeatured = async (p: Product) => {
     const newFeaturedState = !p.isFeatured;
-    await dbService.updateProduct(p.id, { isFeatured: newFeaturedState });
+    const { error } = await dbService.updateProduct(p.id, { isFeatured: newFeaturedState });
+    if (error) {
+      setFeedbackMessage({ type: 'error', text: `Erro ao alterar destaque: ${error}` });
+      setTimeout(() => setFeedbackMessage(null), 5000);
+      return;
+    }
     setProducts((prev) =>
       prev.map((item) => (item.id === p.id ? { ...item, isFeatured: newFeaturedState } : item))
     );
   };
 
   const handleDelete = async (id: string) => {
-    await dbService.deleteProduct(id);
+    const { error } = await dbService.deleteProduct(id);
     setDeleteConfirmId(null);
+    if (error) {
+      setFeedbackMessage({ type: 'error', text: `Erro ao excluir produto: ${error}` });
+      setTimeout(() => setFeedbackMessage(null), 5000);
+      return;
+    }
+    setFeedbackMessage({ type: 'success', text: 'Produto excluído com sucesso do Supabase!' });
+    setTimeout(() => setFeedbackMessage(null), 5000);
     await fetchProducts();
   };
 
@@ -160,6 +202,32 @@ export const ProductsView: React.FC = () => {
           <span>ADICIONAR PRODUTO</span>
         </button>
       </div>
+
+      {/* Feedback Banner */}
+      {feedbackMessage && (
+        <div
+          className={`p-4 rounded-2xl flex items-center justify-between text-xs font-semibold ${
+            feedbackMessage.type === 'success'
+              ? 'bg-emerald-950/60 border border-emerald-800 text-emerald-300'
+              : 'bg-red-950/60 border border-red-800 text-red-300'
+          }`}
+        >
+          <div className="flex items-center gap-2.5">
+            {feedbackMessage.type === 'success' ? (
+              <Check className="w-4 h-4 text-emerald-400" />
+            ) : (
+              <AlertTriangle className="w-4 h-4 text-red-400" />
+            )}
+            <span>{feedbackMessage.text}</span>
+          </div>
+          <button
+            onClick={() => setFeedbackMessage(null)}
+            className="text-white/60 hover:text-white cursor-pointer"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Products Table */}
       <div className="bg-[#1c1b1b] border border-[#2a2a2a] rounded-3xl overflow-hidden">
@@ -293,6 +361,13 @@ export const ProductsView: React.FC = () => {
             </div>
 
             <form onSubmit={handleSave} className="flex flex-col gap-4">
+              {modalError && (
+                <div className="p-3.5 rounded-xl bg-red-950/70 border border-red-800 text-red-200 text-xs flex items-start gap-2.5">
+                  <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                  <div className="flex-1 font-medium">{modalError}</div>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-[#ab8985] mb-1.5">
                   Nome do Produto *

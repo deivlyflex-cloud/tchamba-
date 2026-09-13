@@ -3,6 +3,9 @@ import cocaColaImg from '../assets/images/coca_cola_can_1789227306156.jpg';
 import fantaImg from '../assets/images/fanta_orange_can_1789227326450.jpg';
 import spriteImg from '../assets/images/sprite_bottle_can_1789227342904.jpg';
 
+export const DEFAULT_PRODUCT_IMAGE =
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuDb_uw3Y_ZDEd9EckJKAdbOMpO2fECm3UhrYtcZ7i1HYMlEb4zE-z1DeXdrvpH3n-uU6RDDQERMq2rFB72h_fSk_JVrYXQn7csIlLAiTUCW2KFmSU0ARa7jplYeS2S4BkhuUO55F98ihNAviZNqb6OkaCsmxvH4ZrSm-VpZP93dBbk8qH3AK--23hVVCPps-RI8EnUmFVfYS8Pcza47FgREQKoPEtJ3zcx3l5yznwf4SKmsbpzWXiDhsQ';
+
 export const INITIAL_PRODUCTS: Product[] = [
   {
     id: 'crispy-alcides',

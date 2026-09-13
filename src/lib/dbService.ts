@@ -3,135 +3,230 @@ import { Product, OrderRecord, OrderStatus, CategoryRecord, CustomerRecord, Even
 import { INITIAL_PRODUCTS } from '../data/products';
 
 // Helper to map DB row to frontend Product
-export const mapDbProductToProduct = (p: any): Product => ({
-  id: p.id,
-  name: p.name,
-  description: p.description || '',
-  price: Number(p.price) || 0,
-  category: (p.category_slug === 'combos'
-    ? 'Combos'
-    : p.category_slug === 'cheese-drums'
-    ? 'Cheese Drums'
-    : p.category_slug === 'acompanhamentos'
-    ? 'Acompanhamentos'
-    : p.category_slug === 'bebidas'
-    ? 'Bebidas'
-    : p.category_slug === 'eventos'
-    ? 'Eventos'
-    : 'Combos') as any,
-  image: p.image_url || '',
-  badge: p.badge || undefined,
-  badgeType: p.badge_type || undefined,
-  pieces: p.pieces || undefined,
-  isConsultation: p.is_consultation || false,
-  isFeatured: p.is_featured || false,
-  isActive: p.is_active !== false,
-});
+export const mapDbProductToProduct = (p: any): Product => {
+  const catSlug = (p.category?.slug || p.category_slug || '').toLowerCase();
+  const catName = (p.category?.name || '').toLowerCase();
+
+  let category: any = 'Combos';
+  if (catSlug === 'cheese-drums' || catName.includes('cheese')) {
+    category = 'Cheese Drums';
+  } else if (catSlug === 'acompanhamentos' || catName.includes('acompanha')) {
+    category = 'Acompanhamentos';
+  } else if (catSlug === 'bebidas' || catName.includes('bebida')) {
+    category = 'Bebidas';
+  } else if (catSlug === 'eventos' || catName.includes('evento')) {
+    category = 'Eventos';
+  } else {
+    category = 'Combos';
+  }
+
+  return {
+    id: p.id,
+    name: p.name,
+    description: p.description || '',
+    price: Number(p.price) || 0,
+    category,
+    image: p.image_url || '',
+    badge: p.badge || undefined,
+    badgeType: p.badge_type || undefined,
+    pieces: p.pieces || undefined,
+    isConsultation: Boolean(p.is_consultation),
+    isFeatured: Boolean(p.is_featured),
+    isActive: p.is_active !== false,
+  };
+};
 
 export const dbService = {
   // PRODUCTS
   async getProducts(onlyActive = true): Promise<Product[]> {
     const supabase = getSupabase();
     if (!supabase) {
+      console.warn('[dbService] Supabase not configured, using fallback products');
       return onlyActive ? INITIAL_PRODUCTS.filter((p) => p.isActive !== false) : INITIAL_PRODUCTS;
     }
 
-    let query = supabase.from('products').select('*').order('created_at', { ascending: true });
-    if (onlyActive) {
-      query = query.eq('is_active', true);
-    }
+    try {
+      let query = supabase
+        .from('products')
+        .select('*, category:categories(id, name, slug)')
+        .order('created_at', { ascending: true });
 
-    const { data, error } = await query;
-    if (error || !data || data.length === 0) {
-      console.warn('Could not fetch products from Supabase, falling back to initial data:', error?.message);
+      if (onlyActive) {
+        query = query.eq('is_active', true);
+      }
+
+      const { data, error } = await query;
+      if (error) {
+        console.error('[dbService] Error fetching products from Supabase:', error.message);
+        return onlyActive ? INITIAL_PRODUCTS.filter((p) => p.isActive !== false) : INITIAL_PRODUCTS;
+      }
+
+      if (!data || data.length === 0) {
+        return [];
+      }
+
+      return data.map(mapDbProductToProduct);
+    } catch (err: any) {
+      console.error('[dbService] Exception in getProducts:', err);
       return onlyActive ? INITIAL_PRODUCTS.filter((p) => p.isActive !== false) : INITIAL_PRODUCTS;
     }
-
-    return data.map(mapDbProductToProduct);
   },
 
-  async createProduct(productData: Partial<Product> & { category_slug?: string }): Promise<{ data: any; error: string | null }> {
+  async createProduct(productData: Partial<Product> & { category_id?: string }): Promise<{ data: any; error: string | null }> {
     const supabase = getSupabase();
-    if (!supabase) return { data: null, error: 'Supabase não configurado.' };
+    if (!supabase) return { data: null, error: 'Cliente Supabase não inicializado.' };
 
-    const payload = {
-      name: productData.name,
-      description: productData.description || '',
-      price: productData.price || 0,
-      image_url: productData.image || '',
-      category_slug: (productData.category || 'Combos').toLowerCase().replace(/\s+/g, '-'),
-      badge: productData.badge || null,
-      badge_type: productData.badgeType || null,
-      pieces: productData.pieces || null,
-      is_consultation: Boolean(productData.isConsultation),
-      is_featured: Boolean(productData.isFeatured),
-      is_active: productData.isActive !== false,
-    };
+    try {
+      // Resolve category_id if not provided
+      let categoryId = productData.category_id;
+      if (!categoryId && productData.category) {
+        const categories = await this.getCategories();
+        const found = categories.find(
+          (c) =>
+            c.name.toLowerCase() === (productData.category || '').toLowerCase() ||
+            c.slug.toLowerCase() === (productData.category || '').toLowerCase().replace(/\s+/g, '-')
+        );
+        if (found) categoryId = found.id;
+      }
 
-    const { data, error } = await supabase.from('products').insert(payload).select().single();
-    if (error) return { data: null, error: error.message };
-    return { data, error: null };
-  },
+      // Exact database columns for 'products' table in Supabase
+      const payload: Record<string, any> = {
+        name: (productData.name || '').trim(),
+        description: (productData.description || '').trim(),
+        price: Number(productData.price) || 0,
+        image_url: productData.image?.trim() || null,
+        is_featured: Boolean(productData.isFeatured),
+        is_active: productData.isActive !== false,
+      };
 
-  async updateProduct(id: string, productData: Partial<Product>): Promise<{ error: string | null }> {
-    const supabase = getSupabase();
-    if (!supabase) return { error: 'Supabase não configurado.' };
+      if (categoryId) {
+        payload.category_id = categoryId;
+      }
 
-    const payload: any = {
-      updated_at: new Date().toISOString(),
-    };
+      console.log('[Supabase] Inserting into products:', payload);
+      const { data, error } = await supabase.from('products').insert(payload).select('*, category:categories(id, name, slug)').single();
 
-    if (productData.name !== undefined) payload.name = productData.name;
-    if (productData.description !== undefined) payload.description = productData.description;
-    if (productData.price !== undefined) payload.price = productData.price;
-    if (productData.image !== undefined) payload.image_url = productData.image;
-    if (productData.category !== undefined) {
-      payload.category_slug = productData.category.toLowerCase().replace(/\s+/g, '-');
+      if (error) {
+        console.error('[Supabase] Insert product error:', error);
+        return { data: null, error: `Erro no Supabase ao criar produto: ${error.message}` };
+      }
+
+      console.log('[Supabase] Successfully created product:', data);
+      return { data, error: null };
+    } catch (err: any) {
+      console.error('[Supabase] Exception creating product:', err);
+      return { data: null, error: err.message || 'Erro inesperado ao criar produto.' };
     }
-    if (productData.badge !== undefined) payload.badge = productData.badge || null;
-    if (productData.badgeType !== undefined) payload.badge_type = productData.badgeType || null;
-    if (productData.pieces !== undefined) payload.pieces = productData.pieces || null;
-    if (productData.isConsultation !== undefined) payload.is_consultation = productData.isConsultation;
-    if (productData.isFeatured !== undefined) payload.is_featured = productData.isFeatured;
-    if (productData.isActive !== undefined) payload.is_active = productData.isActive;
+  },
 
-    const { error } = await supabase.from('products').update(payload).eq('id', id);
-    return { error: error ? error.message : null };
+  async updateProduct(id: string, productData: Partial<Product> & { category_id?: string }): Promise<{ error: string | null }> {
+    const supabase = getSupabase();
+    if (!supabase) return { error: 'Cliente Supabase não inicializado.' };
+
+    try {
+      const payload: Record<string, any> = {
+        updated_at: new Date().toISOString(),
+      };
+
+      if (productData.name !== undefined) payload.name = productData.name.trim();
+      if (productData.description !== undefined) payload.description = productData.description.trim();
+      if (productData.price !== undefined) payload.price = Number(productData.price) || 0;
+      if (productData.image !== undefined) payload.image_url = productData.image?.trim() || null;
+      if (productData.isFeatured !== undefined) payload.is_featured = Boolean(productData.isFeatured);
+      if (productData.isActive !== undefined) payload.is_active = Boolean(productData.isActive);
+
+      if (productData.category_id) {
+        payload.category_id = productData.category_id;
+      } else if (productData.category) {
+        const categories = await this.getCategories();
+        const found = categories.find(
+          (c) =>
+            c.name.toLowerCase() === (productData.category || '').toLowerCase() ||
+            c.slug.toLowerCase() === (productData.category || '').toLowerCase().replace(/\s+/g, '-')
+        );
+        if (found) payload.category_id = found.id;
+      }
+
+      console.log('[Supabase] Updating product ID:', id, 'payload:', payload);
+      const { data, error } = await supabase.from('products').update(payload).eq('id', id).select();
+
+      if (error) {
+        console.error('[Supabase] Update product error:', error);
+        return { error: `Erro no Supabase ao atualizar produto: ${error.message}` };
+      }
+
+      if (!data || data.length === 0) {
+        console.warn('[Supabase] 0 rows updated for product ID:', id);
+        return { error: 'Nenhuma alteração foi gravada. Verifique se o produto existe no Supabase e se o seu login de administrador está ativo.' };
+      }
+
+      console.log('[Supabase] Successfully updated product:', data[0]);
+      return { error: null };
+    } catch (err: any) {
+      console.error('[Supabase] Exception updating product:', err);
+      return { error: err.message || 'Erro inesperado ao atualizar produto.' };
+    }
   },
 
   async deleteProduct(id: string): Promise<{ error: string | null }> {
     const supabase = getSupabase();
-    if (!supabase) return { error: 'Supabase não configurado.' };
+    if (!supabase) return { error: 'Cliente Supabase não inicializado.' };
 
-    const { error } = await supabase.from('products').delete().eq('id', id);
-    return { error: error ? error.message : null };
+    try {
+      console.log('[Supabase] Deleting product ID:', id);
+      const { error } = await supabase.from('products').delete().eq('id', id);
+      if (error) {
+        console.error('[Supabase] Delete error:', error);
+        return { error: `Erro no Supabase ao excluir: ${error.message}` };
+      }
+      return { error: null };
+    } catch (err: any) {
+      return { error: err.message || 'Erro ao excluir produto.' };
+    }
   },
 
   // IMAGE UPLOAD VIA SUPABASE STORAGE
   async uploadProductImage(file: File): Promise<{ url: string | null; error: string | null }> {
     const supabase = getSupabase();
-    if (!supabase) return { url: null, error: 'Supabase não configurado.' };
+    if (!supabase) return { url: null, error: 'Cliente Supabase não inicializado.' };
 
     try {
-      const fileExt = file.name.split('.').pop() || 'jpg';
-      const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+      console.log('[Supabase Storage] Starting image upload:', file.name, 'Size:', file.size, 'Type:', file.type);
+      const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const cleanExt = ['jpg', 'jpeg', 'png', 'webp'].includes(fileExt) ? fileExt : 'jpg';
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${cleanExt}`;
       const filePath = `products/${fileName}`;
+      const mimeType = file.type || `image/${cleanExt === 'jpg' ? 'jpeg' : cleanExt}`;
 
-      const { error: uploadError } = await supabase.storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('product-images')
         .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: false,
+          upsert: true,
+          contentType: mimeType,
         });
 
       if (uploadError) {
-        return { url: null, error: uploadError.message };
+        console.error('[Supabase Storage] Upload error:', uploadError);
+        return {
+          url: null,
+          error: `Erro ao enviar imagem para o Supabase Storage: ${uploadError.message}. Verifique as permissões de acesso da sessão.`,
+        };
       }
 
+      console.log('[Supabase Storage] File uploaded successfully:', uploadData);
+
       const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(filePath);
+
+      if (!urlData || !urlData.publicUrl) {
+        return { url: null, error: 'Não foi possível gerar a URL pública da imagem enviada.' };
+      }
+
+      console.log('[Supabase Storage] Public URL generated:', urlData.publicUrl);
       return { url: urlData.publicUrl, error: null };
     } catch (e: any) {
-      return { url: null, error: e.message || 'Falha ao carregar imagem' };
+      console.error('[Supabase Storage] Upload exception:', e);
+      return { url: null, error: e.message || 'Falha ao carregar imagem no storage.' };
     }
   },
 
@@ -140,17 +235,29 @@ export const dbService = {
     const supabase = getSupabase();
     if (!supabase) {
       return [
-        { id: '1', name: 'Combos', slug: 'combos', is_active: true, display_order: 1 },
-        { id: '2', name: 'Cheese Drums', slug: 'cheese-drums', is_active: true, display_order: 2 },
-        { id: '3', name: 'Acompanhamentos', slug: 'acompanhamentos', is_active: true, display_order: 3 },
-        { id: '4', name: 'Bebidas', slug: 'bebidas', is_active: true, display_order: 4 },
-        { id: '5', name: 'Eventos', slug: 'eventos', is_active: true, display_order: 5 },
+        { id: 'acb9bd5b-303d-4a98-93e5-0728bf2eed33', name: 'Combos', slug: 'combos', is_active: true, display_order: 1 },
+        { id: 'fa09a1a6-650e-444c-b41f-4d9afc93425f', name: 'Cheese Drums', slug: 'cheese-drums', is_active: true, display_order: 2 },
+        { id: 'bbaa2b5d-9955-4d36-a165-546fcfa0e0d0', name: 'Acompanhamentos', slug: 'acompanhamentos', is_active: true, display_order: 3 },
+        { id: '1589a1f4-c05d-4960-a53f-6dcd649914b3', name: 'Bebidas', slug: 'bebidas', is_active: true, display_order: 4 },
+        { id: '8f6c3682-d96b-4c3c-95d3-2099b5c90fbd', name: 'Eventos', slug: 'eventos', is_active: true, display_order: 5 },
       ];
     }
 
-    const { data, error } = await supabase.from('categories').select('*').order('display_order', { ascending: true });
-    if (error || !data) return [];
-    return data;
+    try {
+      const { data, error } = await supabase.from('categories').select('*').order('created_at', { ascending: true });
+      if (error || !data || data.length === 0) {
+        return [
+          { id: 'acb9bd5b-303d-4a98-93e5-0728bf2eed33', name: 'Combos', slug: 'combos', is_active: true, display_order: 1 },
+          { id: 'fa09a1a6-650e-444c-b41f-4d9afc93425f', name: 'Cheese Drums', slug: 'cheese-drums', is_active: true, display_order: 2 },
+          { id: 'bbaa2b5d-9955-4d36-a165-546fcfa0e0d0', name: 'Acompanhamentos', slug: 'acompanhamentos', is_active: true, display_order: 3 },
+          { id: '1589a1f4-c05d-4960-a53f-6dcd649914b3', name: 'Bebidas', slug: 'bebidas', is_active: true, display_order: 4 },
+          { id: '8f6c3682-d96b-4c3c-95d3-2099b5c90fbd', name: 'Eventos', slug: 'eventos', is_active: true, display_order: 5 },
+        ];
+      }
+      return data;
+    } catch {
+      return [];
+    }
   },
 
   async createCategory(name: string, slug: string): Promise<{ error: string | null }> {
@@ -188,6 +295,7 @@ export const dbService = {
   async createOrder(params: {
     customerName: string;
     customerPhone: string;
+    customerEmail?: string;
     neighborhood: string;
     deliveryAddress: string;
     notes?: string;
@@ -197,25 +305,57 @@ export const dbService = {
       unitPrice: number;
       quantity: number;
     }>;
-  }): Promise<{ orderNumber: string; orderId?: string; error: string | null }> {
+  }): Promise<{ orderNumber: string; orderId?: string; total?: number; error: string | null }> {
     const supabase = getSupabase();
 
     const subtotal = params.items.reduce((sum, it) => sum + it.unitPrice * it.quantity, 0);
-    const total = subtotal;
-
-    // Generate unique order number: TC-XXXXXX (guaranteed unique format)
-    const timestampSuffix = Date.now().toString().slice(-6);
-    const orderNumber = `TC-${timestampSuffix}`;
+    const fallbackOrderNumber = `TC-${Date.now().toString().slice(-6)}`;
+    const cleanPhone = params.customerPhone.trim();
+    const cleanName = params.customerName.trim();
+    const cleanAddress = params.deliveryAddress.trim();
+    const cleanNeighborhood = params.neighborhood.trim();
+    const notes = params.notes?.trim() || '';
 
     if (!supabase) {
-      // Local fallback if Supabase not yet connected
-      return { orderNumber, error: null };
+      return { orderNumber: fallbackOrderNumber, total: subtotal, error: null };
     }
 
     try {
-      // 1. Locate or create customer
+      // 1. Primary path: Supabase RPC 'create_order'
+      console.log('[Supabase] Executing create_order RPC...');
+      const rpcItems = params.items.map((it) => ({
+        product_id: it.productId || null,
+        product_name: it.productName,
+        quantity: it.quantity,
+        unit_price: it.unitPrice,
+      }));
+
+      const { data: rpcData, error: rpcError } = await supabase.rpc('create_order', {
+        p_customer_name: cleanName,
+        p_customer_phone: cleanPhone,
+        p_customer_email: params.customerEmail || null,
+        p_delivery_address: cleanAddress,
+        p_neighborhood: cleanNeighborhood,
+        p_notes: notes,
+        p_items: rpcItems,
+      });
+
+      if (!rpcError && rpcData) {
+        console.log('[Supabase] create_order RPC success:', rpcData);
+        return {
+          orderNumber: rpcData.order_number || fallbackOrderNumber,
+          orderId: rpcData.order_id,
+          total: Number(rpcData.total) || subtotal,
+          error: null,
+        };
+      }
+
+      if (rpcError) {
+        console.warn('[Supabase] RPC create_order returned error, attempting fallback insert:', rpcError.message);
+      }
+
+      // 2. Fallback path: Direct insert if RPC is not present
       let customerId: string | undefined = undefined;
-      const cleanPhone = params.customerPhone.trim();
 
       const { data: existingCustomer } = await supabase
         .from('customers')
@@ -228,11 +368,11 @@ export const dbService = {
         await supabase
           .from('customers')
           .update({
-            name: params.customerName.trim(),
-            address: params.deliveryAddress.trim(),
-            neighborhood: params.neighborhood.trim(),
+            name: cleanName,
+            address: cleanAddress,
+            neighborhood: cleanNeighborhood,
             total_orders: (existingCustomer.total_orders || 0) + 1,
-            total_spent: Number(existingCustomer.total_spent || 0) + total,
+            total_spent: Number(existingCustomer.total_spent || 0) + subtotal,
             last_order_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           })
@@ -241,12 +381,12 @@ export const dbService = {
         const { data: newCustomer } = await supabase
           .from('customers')
           .insert({
-            name: params.customerName.trim(),
+            name: cleanName,
             phone: cleanPhone,
-            address: params.deliveryAddress.trim(),
-            neighborhood: params.neighborhood.trim(),
+            address: cleanAddress,
+            neighborhood: cleanNeighborhood,
             total_orders: 1,
-            total_spent: total,
+            total_spent: subtotal,
             last_order_at: new Date().toISOString(),
           })
           .select('id')
@@ -255,29 +395,27 @@ export const dbService = {
         if (newCustomer) customerId = newCustomer.id;
       }
 
-      // 2. Insert Order
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .insert({
-          order_number: orderNumber,
+          order_number: fallbackOrderNumber,
           customer_id: customerId,
-          customer_name: params.customerName.trim(),
+          customer_name: cleanName,
           customer_phone: cleanPhone,
-          delivery_address: params.deliveryAddress.trim(),
-          neighborhood: params.neighborhood.trim(),
-          notes: params.notes?.trim() || '',
+          delivery_address: cleanAddress,
+          neighborhood: cleanNeighborhood,
+          notes,
           status: 'Novo',
           subtotal,
-          total,
+          total: subtotal,
         })
         .select('id')
         .single();
 
       if (orderError) {
-        return { orderNumber, error: orderError.message };
+        return { orderNumber: fallbackOrderNumber, total: subtotal, error: orderError.message };
       }
 
-      // 3. Insert Order Items (with fixed historic price)
       if (orderData && params.items.length > 0) {
         const orderItemsPayload = params.items.map((it) => ({
           order_id: orderData.id,
@@ -291,10 +429,10 @@ export const dbService = {
         await supabase.from('order_items').insert(orderItemsPayload);
       }
 
-      return { orderNumber, orderId: orderData?.id, error: null };
+      return { orderNumber: fallbackOrderNumber, orderId: orderData?.id, total: subtotal, error: null };
     } catch (err: any) {
-      console.error('Error inserting order in Supabase:', err);
-      return { orderNumber, error: err.message };
+      console.error('[Supabase] Error creating order:', err);
+      return { orderNumber: fallbackOrderNumber, total: subtotal, error: err.message || 'Erro ao processar pedido' };
     }
   },
 
