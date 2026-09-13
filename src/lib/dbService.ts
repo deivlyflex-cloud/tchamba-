@@ -471,6 +471,31 @@ export const dbService = {
     return data || [];
   },
 
+  async getOrderById(orderIdOrNumber: string): Promise<OrderRecord | null> {
+    const supabase = getSupabase();
+    if (!supabase) return null;
+
+    let query = supabase
+      .from('orders')
+      .select(`
+        *,
+        items:order_items(*)
+      `);
+
+    if (orderIdOrNumber.startsWith('TC-')) {
+      query = query.eq('order_number', orderIdOrNumber);
+    } else {
+      query = query.eq('id', orderIdOrNumber);
+    }
+
+    const { data, error } = await query.maybeSingle();
+    if (error) {
+      console.error('Error fetching order by id/number:', error);
+      return null;
+    }
+    return data;
+  },
+
   async updateOrderStatus(orderId: string, status: OrderStatus): Promise<{ error: string | null }> {
     const supabase = getSupabase();
     if (!supabase) return { error: 'Supabase não configurado.' };

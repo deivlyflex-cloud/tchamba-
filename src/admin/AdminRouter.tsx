@@ -18,7 +18,10 @@ export const AdminRouter: React.FC<AdminRouterProps> = ({ onBackToStore }) => {
 
       const target = hash.startsWith('#/adm') ? hash.replace('#/adm', '') : path.replace('/adm', '');
 
-      const cleanSub = target.replace(/^\//, '').split('/')[0] as AdminTab;
+      let cleanSub = target.replace(/^\//, '').split('/')[0] as AdminTab;
+      if (cleanSub === ('pedido' as any) || cleanSub === 'detalhes-pedido') {
+        cleanSub = 'detalhes-pedido';
+      }
       if (cleanSub) {
         setCurrentSubRoute(cleanSub);
       } else {

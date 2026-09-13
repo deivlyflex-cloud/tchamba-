@@ -12,6 +12,7 @@ import { ReportsView } from './ReportsView';
 import { EventsView } from './EventsView';
 import { SettingsView } from './SettingsView';
 import { AdminsView } from './AdminsView';
+import { OrderDetailsView } from './OrderDetailsView';
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -32,6 +33,7 @@ import {
 export type AdminTab =
   | 'dashboard'
   | 'pedidos'
+  | 'detalhes-pedido'
   | 'produtos'
   | 'categorias'
   | 'clientes'
@@ -58,6 +60,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = 'da
     setCurrentTab(tab);
     window.location.hash = `/adm/${tab}`;
     setMobileMenuOpen(false);
+  };
+
+  const handleOpenOrderDetails = (order: OrderRecord) => {
+    setSelectedOrderForDetails(order);
+    setCurrentTab('detalhes-pedido');
+    window.location.hash = `/adm/detalhes-pedido`;
+    setMobileMenuOpen(false);
+  };
+
+  const isTabActive = (tabId: AdminTab) => {
+    if (currentTab === tabId) return true;
+    if (tabId === 'pedidos' && currentTab === 'detalhes-pedido') return true;
+    return false;
   };
 
   // Poll / check pending orders waiting for manual approval
@@ -156,7 +171,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = 'da
           <nav className="flex flex-col gap-1">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = currentTab === item.id;
+              const isActive = isTabActive(item.id);
               return (
                 <button
                   key={item.id}
@@ -234,7 +249,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = 'da
           <nav className="flex flex-col gap-1.5">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = currentTab === item.id;
+              const isActive = isTabActive(item.id);
               return (
                 <button
                   key={item.id}
@@ -310,10 +325,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = 'da
           {currentTab === 'dashboard' && (
             <DashboardView
               onNavigateToOrders={() => handleTabChange('pedidos')}
-              onSelectOrder={(order) => {
-                setSelectedOrderForDetails(order);
-                handleTabChange('pedidos');
-              }}
+              onSelectOrder={handleOpenOrderDetails}
             />
           )}
 
@@ -321,6 +333,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = 'da
             <OrdersView
               selectedOrder={selectedOrderForDetails}
               onClearSelectedOrder={() => setSelectedOrderForDetails(null)}
+              onViewOrderDetails={handleOpenOrderDetails}
+            />
+          )}
+
+          {currentTab === 'detalhes-pedido' && (
+            <OrderDetailsView
+              order={selectedOrderForDetails}
+              onBack={() => {
+                handleTabChange('pedidos');
+              }}
+              onOrderUpdated={(updated) => {
+                setSelectedOrderForDetails(updated);
+              }}
             />
           )}
 

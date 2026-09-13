@@ -19,15 +19,22 @@ import {
   Plus,
   ShieldCheck,
   Ban,
+  Eye,
+  Maximize2,
 } from 'lucide-react';
 import { CreateManualOrderModal } from './CreateManualOrderModal';
 
 interface OrdersViewProps {
   selectedOrder?: OrderRecord | null;
   onClearSelectedOrder?: () => void;
+  onViewOrderDetails?: (order: OrderRecord) => void;
 }
 
-export const OrdersView: React.FC<OrdersViewProps> = ({ selectedOrder: initialSelected, onClearSelectedOrder }) => {
+export const OrdersView: React.FC<OrdersViewProps> = ({
+  selectedOrder: initialSelected,
+  onClearSelectedOrder,
+  onViewOrderDetails,
+}) => {
   const [orders, setOrders] = useState<OrderRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('Todos');
@@ -350,7 +357,12 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ selectedOrder: initialSe
                     return (
                       <tr
                         key={order.id}
-                        onClick={() => setActiveOrder(order)}
+                        onClick={() => {
+                          setActiveOrder(order);
+                          if (onViewOrderDetails && window.innerWidth < 1024) {
+                            onViewOrderDetails(order);
+                          }
+                        }}
                         className={`transition-colors cursor-pointer ${
                           isSelected ? 'bg-[#2a2a2a]' : 'hover:bg-[#201f1f]'
                         }`}
@@ -384,47 +396,54 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ selectedOrder: initialSe
                           {dateFormatted}
                         </td>
                         <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                          {/* Botões de Ação Direta na Tabela */}
-                          {order.status === 'Novo' ? (
-                            <div className="flex items-center justify-end gap-1.5">
-                              <button
-                                title="Aprovar Pedido Manualmente"
-                                disabled={updatingStatus}
-                                onClick={() => handleApproveOrder(order.id, order.order_number)}
-                                className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-[11px] flex items-center gap-1 shadow transition-all cursor-pointer whitespace-nowrap"
-                              >
-                                <Check className="w-3.5 h-3.5 stroke-[3]" />
-                                <span>Aprovar</span>
-                              </button>
-                              <button
-                                title="Cancelar Pedido"
-                                disabled={updatingStatus}
-                                onClick={() => handleCancelClick(order)}
-                                className="px-2.5 py-1 rounded-lg bg-red-600/20 hover:bg-red-600/30 active:scale-95 text-red-300 border border-red-500/40 font-bold text-[11px] flex items-center gap-1 transition-all cursor-pointer whitespace-nowrap"
-                              >
-                                <X className="w-3.5 h-3.5 stroke-[2.5]" />
-                                <span>Cancelar</span>
-                              </button>
-                            </div>
-                          ) : order.status === 'Confirmado' ? (
-                            <div className="flex items-center justify-end gap-2">
+                          <div className="flex items-center justify-end gap-1.5">
+                            {/* Botão Ver Detalhes */}
+                            <button
+                              title="Abrir Página de Detalhes"
+                              onClick={() => {
+                                if (onViewOrderDetails) {
+                                  onViewOrderDetails(order);
+                                } else {
+                                  setActiveOrder(order);
+                                }
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-[#2a2a2a] hover:bg-[#353534] active:scale-95 text-white font-semibold text-[11px] flex items-center gap-1 transition-all cursor-pointer whitespace-nowrap"
+                            >
+                              <Eye className="w-3.5 h-3.5 text-[#ffb95f]" />
+                              <span className="hidden sm:inline">Detalhes</span>
+                            </button>
+
+                            {/* Botões de Ação Direta na Tabela */}
+                            {order.status === 'Novo' ? (
+                              <>
+                                <button
+                                  title="Aprovar Pedido Manualmente"
+                                  disabled={updatingStatus}
+                                  onClick={() => handleApproveOrder(order.id, order.order_number)}
+                                  className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-[11px] flex items-center gap-1 shadow transition-all cursor-pointer whitespace-nowrap"
+                                >
+                                  <Check className="w-3.5 h-3.5 stroke-[3]" />
+                                  <span>Aprovar</span>
+                                </button>
+                                <button
+                                  title="Cancelar Pedido"
+                                  disabled={updatingStatus}
+                                  onClick={() => handleCancelClick(order)}
+                                  className="px-2 py-1 rounded-lg bg-red-600/20 hover:bg-red-600/30 active:scale-95 text-red-300 border border-red-500/40 font-bold text-[11px] flex items-center gap-1 transition-all cursor-pointer whitespace-nowrap"
+                                >
+                                  <X className="w-3.5 h-3.5 stroke-[2.5]" />
+                                </button>
+                              </>
+                            ) : order.status === 'Confirmado' ? (
                               <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
                                 <Check className="w-3 h-3 stroke-[3]" /> Aprovado
                               </span>
-                              <button
-                                title="Cancelar Pedido"
-                                disabled={updatingStatus}
-                                onClick={() => handleCancelClick(order)}
-                                className="px-2 py-0.5 rounded text-[10px] bg-red-500/10 hover:bg-red-500/25 text-red-400 font-medium cursor-pointer"
-                              >
-                                Cancelar
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-[11px] text-[#ab8985]">
-                              {order.status}
-                            </span>
-                          )}
+                            ) : (
+                              <span className="text-[11px] text-[#ab8985]">
+                                {order.status}
+                              </span>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -448,15 +467,28 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ selectedOrder: initialSe
                 </h3>
               </div>
 
-              <button
-                onClick={() => {
-                  setActiveOrder(null);
-                  if (onClearSelectedOrder) onClearSelectedOrder();
-                }}
-                className="w-8 h-8 rounded-full bg-[#2a2a2a] hover:bg-[#353534] flex items-center justify-center text-white cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-2">
+                {onViewOrderDetails && (
+                  <button
+                    onClick={() => onViewOrderDetails(activeOrder)}
+                    className="px-2.5 py-1 rounded-lg bg-[#ffb95f]/15 hover:bg-[#ffb95f]/25 text-[#ffb95f] border border-[#ffb95f]/30 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                    title="Abrir página completa do pedido com comanda para impressão"
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" />
+                    <span>Página Completa</span>
+                  </button>
+                )}
+
+                <button
+                  onClick={() => {
+                    setActiveOrder(null);
+                    if (onClearSelectedOrder) onClearSelectedOrder();
+                  }}
+                  className="w-8 h-8 rounded-full bg-[#2a2a2a] hover:bg-[#353534] flex items-center justify-center text-white cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             {/* DESTAQUE DE APROVAÇÃO MANUAL SE O PEDIDO FOR NOVO */}

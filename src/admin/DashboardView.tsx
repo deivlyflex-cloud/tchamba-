@@ -39,8 +39,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigateToOrders
   const todayStr = new Date().toISOString().split('T')[0];
   const todayOrders = orders.filter((o) => o.created_at?.startsWith(todayStr));
 
+  // Faturamento conta exclusivamente para pedidos concluídos e aprovados
   const faturamentoHoje = todayOrders.reduce((sum, o) => {
-    if (o.status !== 'Cancelado') return sum + Number(o.total || 0);
+    if (o.status === 'Concluído') return sum + Number(o.total || 0);
+    return sum;
+  }, 0);
+
+  // Faturamento previsto / em andamento de pedidos aprovados hoje
+  const faturamentoHojeEmAndamento = todayOrders.reduce((sum, o) => {
+    if (o.status === 'Confirmado' || o.status === 'Em preparação' || o.status === 'Pronto') {
+      return sum + Number(o.total || 0);
+    }
     return sum;
   }, 0);
 
@@ -59,16 +68,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigateToOrders
     }
   };
 
-  // Chart data: sales by day for the last 7 days
+  // Chart data: sales by day for the last 7 days (apenas pedidos concluídos e aprovados geram faturamento)
   const last7Days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (6 - i));
     const dateStr = d.toISOString().split('T')[0];
     const displayDate = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`;
 
-    const dayOrders = orders.filter((o) => o.created_at?.startsWith(dateStr) && o.status !== 'Cancelado');
+    const dayOrders = orders.filter((o) => o.created_at?.startsWith(dateStr) && o.status === 'Concluído');
     const revenue = dayOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
-    const count = dayOrders.length;
+    const count = orders.filter((o) => o.created_at?.startsWith(dateStr) && o.status !== 'Cancelado').length;
 
     return { dateStr, displayDate, count, revenue };
   });
@@ -130,9 +139,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigateToOrders
             <span className="font-heading text-2xl font-black text-white">
               {FORMAT_KZ(faturamentoHoje)}
             </span>
-            <span className="text-[11px] text-[#ab8985] block mt-0.5">
-              Calculado a partir dos pedidos reais
+            <span className="text-[11px] text-emerald-400/90 block mt-0.5 font-medium">
+              Pedidos concluídos & aprovados
             </span>
+            {faturamentoHojeEmAndamento > 0 && (
+              <span className="text-[10px] text-amber-400/90 block mt-1">
+                + {FORMAT_KZ(faturamentoHojeEmAndamento)} em andamento (aprovados)
+              </span>
+            )}
           </div>
         </div>
 
