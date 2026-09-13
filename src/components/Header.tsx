@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ShoppingBag, Menu, X, Clock, Flame } from 'lucide-react';
+import { useStoreStatus } from '../lib/storeHours';
 
 interface HeaderProps {
   cartCount: number;
@@ -15,22 +16,7 @@ export const Header: React.FC<HeaderProps> = ({
   activeSection,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isOpenNow, setIsOpenNow] = useState(true);
-
-  useEffect(() => {
-    const checkOpenStatus = () => {
-      // Huambo is in WAT (UTC+1)
-      const now = new Date();
-      const currentMinutes = now.getHours() * 60 + now.getMinutes();
-      const openMinutes = 10 * 60; // 10:00
-      const closeMinutes = 23 * 60 + 30; // 23:30
-      setIsOpenNow(currentMinutes >= openMinutes && currentMinutes <= closeMinutes);
-    };
-
-    checkOpenStatus();
-    const interval = setInterval(checkOpenStatus, 60000);
-    return () => clearInterval(interval);
-  }, []);
+  const { isOpen: isOpenNow, badgeText, openingTime, closingTime } = useStoreStatus();
 
   const navItems = [
     { id: 'inicio', label: 'Início' },

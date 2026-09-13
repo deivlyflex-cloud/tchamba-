@@ -2,7 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { dbService } from '../lib/dbService';
 import { OrderRecord } from '../types';
 import { FORMAT_KZ } from '../data/products';
-import { DollarSign, ShoppingBag, Clock, CheckCircle2, TrendingUp, Calendar, ArrowRight } from 'lucide-react';
+import {
+  DollarSign,
+  ShoppingBag,
+  Clock,
+  CheckCircle2,
+  TrendingUp,
+  Calendar,
+  ArrowRight,
+  AlertCircle,
+  Check,
+} from 'lucide-react';
 
 interface DashboardViewProps {
   onNavigateToOrders: () => void;
@@ -36,7 +46,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigateToOrders
 
   const totalPedidosHoje = todayOrders.length;
   const pedidosPendentes = orders.filter((o) => o.status === 'Novo' || o.status === 'Confirmado' || o.status === 'Em preparação').length;
+  const pedidosAguardandoAprovacao = orders.filter((o) => o.status === 'Novo').length;
   const pedidosConcluidos = orders.filter((o) => o.status === 'Concluído').length;
+
+  const handleApproveQuick = async (orderId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const { error } = await dbService.updateOrderStatus(orderId, 'Confirmado');
+    if (!error) {
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, status: 'Confirmado' } : o))
+      );
+    }
+  };
 
   // Chart data: sales by day for the last 7 days
   const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -66,6 +87,33 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigateToOrders
 
   return (
     <div className="flex flex-col gap-8">
+      {/* Banner de Pedidos Aguardando Aprovação */}
+      {pedidosAguardandoAprovacao > 0 && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-amber-950/35 border border-amber-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+              <AlertCircle className="w-5 h-5 animate-pulse" />
+            </div>
+            <div>
+              <span className="text-sm font-bold text-amber-300 block">
+                {pedidosAguardandoAprovacao === 1
+                  ? 'Existe 1 pedido novo aguardando aprovação manual'
+                  : `Existem ${pedidosAguardandoAprovacao} pedidos novos aguardando aprovação manual`}
+              </span>
+              <span className="text-xs text-amber-200/70">
+                Os pedidos devem ser aprovados antes de serem confirmados e encaminhados para a cozinha.
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={onNavigateToOrders}
+            className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-[#1a1100] font-bold text-xs uppercase tracking-wider self-start sm:self-auto transition-all cursor-pointer shadow whitespace-nowrap"
+          >
+            Aprovar Pedidos ({pedidosAguardandoAprovacao})
+          </button>
+        </div>
+      )}
+
       {/* 4 Top Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Metric 1 */}
@@ -297,25 +345,39 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigateToOrders
                       <td className="px-5 py-3.5">
                         <span
                           className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                            statusColors[order.status] || 'bg-gray-500/20 text-gray-300'
+                            order.status === 'Novo'
+                              ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse'
+                              : statusColors[order.status] || 'bg-gray-500/20 text-gray-300'
                           }`}
                         >
-                          {order.status}
+                          {order.status === 'Novo' ? 'Aguardando Aprovação' : order.status}
                         </span>
                       </td>
                       <td className="px-5 py-3.5 text-[#ab8985] text-[11px]">
                         {formattedDate}
                       </td>
                       <td className="px-5 py-3.5 text-right">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onSelectOrder(order);
-                          }}
-                          className="px-3 py-1 rounded-lg bg-[#2a2a2a] hover:bg-[#353534] text-xs font-semibold text-white transition-colors cursor-pointer"
-                        >
-                          Detalhes
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          {order.status === 'Novo' && (
+                            <button
+                              onClick={(e) => handleApproveQuick(order.id, e)}
+                              className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] flex items-center gap-1 shadow transition-all cursor-pointer"
+                              title="Aprovar Pedido Agora"
+                            >
+                              <Check className="w-3 h-3 stroke-[3]" />
+                              <span>Aprovar</span>
+                            </button>
+                          )}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onSelectOrder(order);
+                            }}
+                            className="px-3 py-1 rounded-lg bg-[#2a2a2a] hover:bg-[#353534] text-xs font-semibold text-white transition-colors cursor-pointer"
+                          >
+                            Detalhes
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

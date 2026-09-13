@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { dbService } from '../lib/dbService';
 import { Product, Category } from '../types';
-import { FORMAT_KZ } from '../data/products';
+import { FORMAT_KZ, getProductImage } from '../data/products';
 import { Plus, Edit2, Trash2, Check, X, Upload, Star, Eye, EyeOff, AlertTriangle, Image as ImageIcon } from 'lucide-react';
 
 export const ProductsView: React.FC = () => {
@@ -68,9 +68,10 @@ export const ProductsView: React.FC = () => {
     setFormIsFeatured(Boolean(p.isFeatured));
     setFormIsActive(p.isActive !== false);
     setFormIsConsultation(Boolean(p.isConsultation));
-    setFormImageUrl(p.image);
+    const currentImg = getProductImage(p, p.image);
+    setFormImageUrl(p.image || currentImg);
     setImageFile(null);
-    setImagePreview(p.image);
+    setImagePreview(currentImg);
     setModalError(null);
     setIsModalOpen(true);
   };
@@ -259,9 +260,9 @@ export const ProductsView: React.FC = () => {
                     <tr key={product.id} className="hover:bg-[#201f1f] transition-colors">
                       <td className="px-5 py-3.5 flex items-center gap-3">
                         <div className="w-11 h-11 rounded-xl bg-[#131313] border border-[#2a2a2a] overflow-hidden shrink-0 flex items-center justify-center">
-                          {product.image ? (
+                          {getProductImage(product, product.image) ? (
                             <img
-                              src={product.image}
+                              src={getProductImage(product, product.image)}
                               alt={product.name}
                               className="w-full h-full object-cover"
                             />

@@ -1,6 +1,6 @@
 import React from 'react';
 import { CartItem } from '../types';
-import { FORMAT_KZ, DEFAULT_PRODUCT_IMAGE } from '../data/products';
+import { FORMAT_KZ, getProductImage } from '../data/products';
 import { ShoppingBag, X, Plus, Minus, Trash2, CheckCircle2 } from 'lucide-react';
 
 interface CartDrawerProps {
@@ -87,7 +87,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     <div className="flex items-center gap-3">
                       <img
                         alt={item.product.name}
-                        src={item.product.image?.trim() || DEFAULT_PRODUCT_IMAGE}
+                        src={getProductImage(item.product, item.product.image)}
                         className="w-12 h-12 rounded-xl object-cover border border-[#2a2a2a]"
                       />
                       <div>

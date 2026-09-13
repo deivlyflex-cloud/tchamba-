@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Product } from '../types';
-import { FORMAT_KZ, DEFAULT_PRODUCT_IMAGE } from '../data/products';
+import { FORMAT_KZ, getProductImage } from '../data/products';
 import { X, Sliders, Check, RotateCcw } from 'lucide-react';
 
 interface AdminPriceModalProps {
@@ -56,7 +56,7 @@ export const AdminPriceModal: React.FC<AdminPriceModalProps> = ({
                 <div className="flex items-center gap-3">
                   <img
                     alt={product.name}
-                    src={product.image?.trim() || DEFAULT_PRODUCT_IMAGE}
+                    src={getProductImage(product, product.image)}
                     className="w-10 h-10 rounded-lg object-cover border border-[#2a2a2a]"
                   />
                   <div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../lib/AuthContext';
 import { getSupabase } from '../lib/supabase';
+import { dbService } from '../lib/dbService';
 import { OrderRecord } from '../types';
 import { DashboardView } from './DashboardView';
 import { OrdersView } from './OrdersView';
@@ -50,6 +51,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = 'da
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedOrderForDetails, setSelectedOrderForDetails] = useState<OrderRecord | null>(null);
   const [newOrderNotification, setNewOrderNotification] = useState<string | null>(null);
+  const [pendingApprovalCount, setPendingApprovalCount] = useState<number>(0);
 
   // Sync route URL hash or path smoothly
   const handleTabChange = (tab: AdminTab) => {
@@ -57,6 +59,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = 'da
     window.location.hash = `/adm/${tab}`;
     setMobileMenuOpen(false);
   };
+
+  // Poll / check pending orders waiting for manual approval
+  useEffect(() => {
+    const checkPending = async () => {
+      const orders = await dbService.getOrders('Novo');
+      setPendingApprovalCount(orders.length);
+    };
+    checkPending();
+    const interval = setInterval(checkPending, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Realtime subscription to new orders on Supabase
   useEffect(() => {
@@ -70,7 +83,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = 'da
         { event: 'INSERT', schema: 'public', table: 'orders' },
         (payload) => {
           const newOrder = payload.new as OrderRecord;
-          setNewOrderNotification(`Novo pedido recebido: ${newOrder.order_number}`);
+          setNewOrderNotification(`Novo pedido recebido: ${newOrder.order_number} (Aguardando Aprovação)`);
+          setPendingApprovalCount((prev) => prev + 1);
           setTimeout(() => setNewOrderNotification(null), 8000);
         }
       )
@@ -147,14 +161,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = 'da
                 <button
                   key={item.id}
                   onClick={() => handleTabChange(item.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer text-left ${
+                  className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer text-left ${
                     isActive
                       ? 'bg-[#d32f2f] text-white shadow-md shadow-[#d32f2f]/20'
                       : 'text-[#ab8985] hover:bg-[#201f1f] hover:text-white'
                   }`}
                 >
-                  <Icon className="w-4 h-4 shrink-0" />
-                  <span>{item.label}</span>
+                  <div className="flex items-center gap-3">
+                    <Icon className="w-4 h-4 shrink-0" />
+                    <span>{item.label}</span>
+                  </div>
+
+                  {item.id === 'pedidos' && pendingApprovalCount > 0 && (
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                        isActive
+                          ? 'bg-white text-[#d32f2f]'
+                          : 'bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse'
+                      }`}
+                    >
+                      {pendingApprovalCount}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -211,12 +239,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = 'da
                 <button
                   key={item.id}
                   onClick={() => handleTabChange(item.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-left cursor-pointer ${
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold text-left cursor-pointer ${
                     isActive ? 'bg-[#d32f2f] text-white' : 'text-[#ab8985] hover:bg-[#1c1b1b]'
                   }`}
                 >
-                  <Icon className="w-5 h-5" />
-                  <span>{item.label}</span>
+                  <div className="flex items-center gap-3">
+                    <Icon className="w-5 h-5" />
+                    <span>{item.label}</span>
+                  </div>
+
+                  {item.id === 'pedidos' && pendingApprovalCount > 0 && (
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-xs font-black ${
+                        isActive
+                          ? 'bg-white text-[#d32f2f]'
+                          : 'bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse'
+                      }`}
+                    >
+                      {pendingApprovalCount}
+                    </span>
+                  )}
                 </button>
               );
             })}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   MapPin,
   Clock,
@@ -9,23 +9,10 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { WhatsAppIcon } from './WhatsAppIcon';
+import { useStoreStatus } from '../lib/storeHours';
 
 export const LocationHours: React.FC = () => {
-  const [isOpenNow, setIsOpenNow] = useState(true);
-
-  useEffect(() => {
-    const checkOpenStatus = () => {
-      const now = new Date();
-      const currentMinutes = now.getHours() * 60 + now.getMinutes();
-      const openMinutes = 10 * 60; // 10:00
-      const closeMinutes = 23 * 60 + 30; // 23:30
-      setIsOpenNow(currentMinutes >= openMinutes && currentMinutes <= closeMinutes);
-    };
-
-    checkOpenStatus();
-    const interval = setInterval(checkOpenStatus, 60000);
-    return () => clearInterval(interval);
-  }, []);
+  const { isOpen: isOpenNow, statusText } = useStoreStatus();
 
   return (
     <section id="localizacao" className="w-full px-4 sm:px-6 lg:px-12 py-16 sm:py-20 bg-[#131313] scroll-mt-20">

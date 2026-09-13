@@ -1,6 +1,6 @@
 import { getSupabase } from './supabase';
 import { Product, OrderRecord, OrderStatus, CategoryRecord, CustomerRecord, EventOrderRecord, StoreSettingsRecord } from '../types';
-import { INITIAL_PRODUCTS } from '../data/products';
+import { INITIAL_PRODUCTS, getProductImage } from '../data/products';
 
 // Helper to map DB row to frontend Product
 export const mapDbProductToProduct = (p: any): Product => {
@@ -20,13 +20,24 @@ export const mapDbProductToProduct = (p: any): Product => {
     category = 'Combos';
   }
 
+  // Resolve genuine photo: authentic drinks, fries, specific combos, or custom upload
+  const resolvedImage = getProductImage(
+    {
+      id: p.id,
+      name: p.name,
+      category,
+      image: p.image_url,
+    },
+    p.image_url
+  );
+
   return {
     id: p.id,
     name: p.name,
     description: p.description || '',
     price: Number(p.price) || 0,
     category,
-    image: p.image_url || '',
+    image: resolvedImage,
     badge: p.badge || undefined,
     badgeType: p.badge_type || undefined,
     pieces: p.pieces || undefined,

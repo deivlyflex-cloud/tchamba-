@@ -1,5 +1,6 @@
 import React from 'react';
 import { Utensils, Flame, Clock, MapPin, Sparkles } from 'lucide-react';
+import { useStoreStatus } from '../lib/storeHours';
 
 interface HeroProps {
   onExploreMenu: () => void;
@@ -7,6 +8,7 @@ interface HeroProps {
 }
 
 export const Hero: React.FC<HeroProps> = ({ onExploreMenu, onFilterCombos }) => {
+  const { isOpen, statusText } = useStoreStatus();
   return (
     <section id="inicio" className="relative w-full overflow-hidden bg-[#0e0e0e] pt-20">
       {/* Background Image with layered cinematic gradients */}
@@ -24,9 +26,13 @@ export const Hero: React.FC<HeroProps> = ({ onExploreMenu, onFilterCombos }) => 
         {/* Status Pill */}
         <div className="inline-flex flex-wrap items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#2a2a2a]/90 backdrop-blur-md w-fit mb-6 border border-[#353534] shadow-sm">
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+            <span
+              className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'
+              }`}
+            />
             <span className="text-xs font-bold uppercase tracking-widest text-white whitespace-nowrap">
-              Aberto Agora
+              {statusText}
             </span>
           </div>
           <span className="text-[#ab8985] text-xs">•</span>

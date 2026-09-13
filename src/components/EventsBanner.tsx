@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PartyPopper, Utensils, MessageCircle, ShoppingBag, Check, Phone } from 'lucide-react';
+import { Utensils, MessageCircle, ShoppingBag, Check, Phone } from 'lucide-react';
 import { Product } from '../types';
 
 interface EventsBannerProps {
@@ -64,8 +64,7 @@ export const EventsBanner: React.FC<EventsBannerProps> = ({
         <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 items-center gap-8 lg:gap-12 p-6 sm:p-10 lg:p-14">
           {/* Left Text and Pricing Tiers */}
           <div className="lg:col-span-7 flex flex-col gap-6">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#ee9800]/20 text-[#ffb95f] border border-[#ee9800]/30 w-fit backdrop-blur-md">
-              <PartyPopper className="w-4 h-4 text-[#ffb95f]" />
+            <div className="inline-flex items-center px-3.5 py-1.5 rounded-full bg-[#ee9800]/20 text-[#ffb95f] border border-[#ee9800]/30 w-fit backdrop-blur-md">
               <span className="text-xs font-bold uppercase tracking-wider">
                 Catering & Grandes Pedidos
               </span>
